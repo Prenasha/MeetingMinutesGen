@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Minutes Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-placeholder {
+            width: 200px;
+            height: 80px;
+            background-color: #ddd;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: bold;
+            border: 1px dashed #999;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #1a252f;
+        }
+        
+        .time-inputs {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .time-inputs .form-group {
+            flex: 1;
+        }
+        
+        #attendance-list {
+            margin: 15px 0;
+        }
+        
+        .attendance-item {
+            display: inline-block;
+            background-color: #e8f4fc;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 3px;
+        }
+        
+        #minutes-items {
+            margin: 20px 0;
+        }
+        
+        .minutes-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+        }
+        
+        .preview-section {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+        }
+        
+        #pdf-preview {
+            border: 1px solid #ddd;
+            padding: 20px;
+            background-color: white;
+            margin-top: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .pdf-header-placeholder {
+            height: 100px;
+            background-color: #eee;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: bold;
+            border: 1px dashed #999;
+        }
+        
+        .pdf-footer-placeholder {
+            height: 50px;
+            background-color: #eee;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: bold;
+            border: 1px dashed #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-placeholder">YOUR COMPANY LOGO</div>
+        <h1>Meeting Minutes Generator</h1>
+    </div>
+    
+    <div class="container">
+        <div class="form-section">
+            <h2>Meeting Details</h2>
+            <div class="form-group">
+                <label for="meeting-date">Meeting Date:</label>
+                <input type="date" id="meeting-date">
+            </div>
+            <div class="time-inputs">
+                <div class="form-group">
+                    <label for="start-time">Start Time:</label>
+                    <input type="time" id="start-time">
+                </div>
+                <div class="form-group">
+                    <label for="end-time">End Time:</label>
+                    <input type="time" id="end-time">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="meeting-title">Meeting Title:</label>
+                <input type="text" id="meeting-title" placeholder="Enter meeting title">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2>Attendance</h2>
+            <div class="form-group">
+                <label for="employee-name">Employee Name:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="employee-name" placeholder="Enter employee name" style="flex: 1;">
+                    <button id="add-employee" class="btn">Add</button>
+                </div>
+            </div>
+            <div id="attendance-list">
+                <!-- Attendance items will be added here -->
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2>Discussion Points & Tasks</h2>
+            <div class="form-group">
+                <label for="new-task">Discussion Point/Task:</label>
+                <textarea id="new-task" placeholder="Enter discussion point or task"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="task-assignee">Assign To:</label>
+                <select id="task-assignee">
+                    <option value="">Select assignee</option>
+                    <!-- Options will be added from attendance -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="task-deadline">Deadline:</label>
+                <input type="date" id="task-deadline">
+            </div>
+            <button id="add-minute" class="btn">Add to Minutes</button>
+            
+            <div id="minutes-items">
+                <!-- Minutes items will be added here -->
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2>Additional Notes</h2>
+            <div class="form-group">
+                <textarea id="notes" placeholder="Enter any additional notes"></textarea>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <h2>Preview & Export</h2>
+            <button id="generate-preview" class="btn">Preview</button>
+            <button id="export-pdf" class="btn" style="margin-left: 10px;">Export as PDF</button>
+            
+            <div id="pdf-preview" class="hidden">
+                <div class="pdf-header-placeholder">YOUR COMPANY PDF HEADER</div>
+                
+                <h2 id="preview-meeting-title" style="text-align: center;"></h2>
+                <p><strong>Date:</strong> <span id="preview-date"></span></p>
+                <p><strong>Time:</strong> <span id="preview-start-time"></span> - <span id="preview-end-time"></span></p>
+                
+                <h3>Attendance</h3>
+                <div id="preview-attendance"></div>
+                
+                <h3>Discussion Points & Tasks</h3>
+                <div id="preview-minutes"></div>
+                
+                <h3>Action Items</h3>
+                <table id="preview-tasks">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Assignee</th>
+                            <th>Deadline</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Tasks will be added here -->
+                    </tbody>
+                </table>
+                
+                <h3>Additional Notes</h3>
+                <div id="preview-notes"></div>
+                
+                <div class="pdf-footer-placeholder">YOUR COMPANY PDF FOOTER</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the database
+        const db = {
+            attendees: [],
+            minutes: [],
+            tasks: []
+        };
+
+        // DOM elements
+        const employeeNameInput = document.getElementById('employee-name');
+        const addEmployeeBtn = document.getElementById('add-employee');
+        const attendanceList = document.getElementById('attendance-list');
+        const taskAssigneeSelect = document.getElementById('task-assignee');
+        const newTaskInput = document.getElementById('new-task');
+        const taskDeadlineInput = document.getElementById('task-deadline');
+        const addMinuteBtn = document.getElementById('add-minute');
+        const minutesItems = document.getElementById('minutes-items');
+        const generatePreviewBtn = document.getElementById('generate-preview');
+        const exportPdfBtn = document.getElementById('export-pdf');
+        const pdfPreview = document.getElementById('pdf-preview');
+
+        // Add employee to attendance
+        addEmployeeBtn.addEventListener('click', () => {
+            const name = employeeNameInput.value.trim();
+            if (name) {
+                if (!db.attendees.includes(name)) {
+                    db.attendees.push(name);
+                    renderAttendance();
+                    updateAssigneeDropdown();
+                    employeeNameInput.value = '';
+                } else {
+                    alert('This employee is already in the attendance list.');
+                }
+            }
+        });
+
+        // Render attendance list
+        function renderAttendance() {
+            attendanceList.innerHTML = '';
+            db.attendees.forEach(attendee => {
+                const item = document.createElement('div');
+                item.className = 'attendance-item';
+                item.innerHTML = `
+                    ${attendee}
+                    <button onclick="removeAttendee('${attendee}')" class="btn" style="padding: 2px 5px; margin-left: 5px;">×</button>
+                `;
+                attendanceList.appendChild(item);
+            });
+        }
+
+        // Remove attendee
+        window.removeAttendee = function(name) {
+            db.attendees = db.attendees.filter(attendee => attendee !== name);
+            renderAttendance();
+            updateAssigneeDropdown();
+            
+            // Remove tasks assigned to this person
+            db.tasks = db.tasks.filter(task => task.assignee !== name);
+            renderMinutes();
+        };
+
+        // Update assignee dropdown
+        function updateAssigneeDropdown() {
+            taskAssigneeSelect.innerHTML = '<option value="">Select assignee</option>';
+            db.attendees.forEach(attendee => {
+                const option = document.createElement('option');
+                option.value = attendee;
+                option.textContent = attendee;
+                taskAssigneeSelect.appendChild(option);
+            });
+        }
+
+        // Add minute item
+        addMinuteBtn.addEventListener('click', () => {
+            const content = newTaskInput.value.trim();
+            const assignee = taskAssigneeSelect.value;
+            const deadline = taskDeadlineInput.value;
+            
+            if (content) {
+                const minuteItem = {
+                    id: Date.now(),
+                    content,
+                    assignee,
+                    deadline,
+                    timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                };
+                
+                db.minutes.push(minuteItem);
+                
+                if (assignee) {
+                    db.tasks.push({
+                        id: minuteItem.id,
+                        task: content,
+                        assignee,
+                        deadline
+                    });
+                }
+                
+                renderMinutes();
+                newTaskInput.value = '';
+                taskAssigneeSelect.value = '';
+                taskDeadlineInput.value = '';
+            }
+        });
+
+        // Render minutes
+        function renderMinutes() {
+            minutesItems.innerHTML = '';
+            db.minutes.forEach(item => {
+                const minuteElement = document.createElement('div');
+                minuteElement.className = 'minutes-item';
+                minuteElement.innerHTML = `
+                    <p><strong>${item.timestamp}</strong>: ${item.content}</p>
+                    ${item.assignee ? `<p><strong>Assigned to:</strong> ${item.assignee}</p>` : ''}
+                    ${item.deadline ? `<p><strong>Deadline:</strong> ${item.deadline}</p>` : ''}
+                    <button onclick="removeMinute(${item.id})" class="btn" style="padding: 5px 10px; margin-top: 5px;">Remove</button>
+                `;
+                minutesItems.appendChild(minuteElement);
+            });
+        }
+
+        // Remove minute
+        window.removeMinute = function(id) {
+            db.minutes = db.minutes.filter(item => item.id !== id);
+            db.tasks = db.tasks.filter(task => task.id !== id);
+            renderMinutes();
+        };
+
+        // Generate preview
+        generatePreviewBtn.addEventListener('click', () => {
+            document.getElementById('preview-meeting-title').textContent = 
+                document.getElementById('meeting-title').value || 'Meeting Minutes';
+            
+            const meetingDate = document.getElementById('meeting-date').value;
+            document.getElementById('preview-date').textContent = 
+                meetingDate ? new Date(meetingDate).toLocaleDateString() : 'Not specified';
+            
+            document.getElementById('preview-start-time').textContent = 
+                document.getElementById('start-time').value || 'Not specified';
+            document.getElementById('preview-end-time').textContent = 
+                document.getElementById('end-time').value || 'Not specified';
+            
+            // Attendance
+            const previewAttendance = document.getElementById('preview-attendance');
+            previewAttendance.innerHTML = '';
+            if (db.attendees.length > 0) {
+                const ul = document.createElement('ul');
+                db.attendees.forEach(attendee => {
+                    const li = document.createElement('li');
+                    li.textContent = attendee;
+                    ul.appendChild(li);
+                });
+                previewAttendance.appendChild(ul);
+            } else {
+                previewAttendance.textContent = 'No attendees recorded.';
+            }
+            
+            // Minutes
+            const previewMinutes = document.getElementById('preview-minutes');
+            previewMinutes.innerHTML = '';
+            if (db.minutes.length > 0) {
+                const ol = document.createElement('ol');
+                db.minutes.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${item.timestamp}</strong>: ${item.content}`;
+                    if (item.assignee) {
+                        li.innerHTML += `<br><em>Assigned to: ${item.assignee}</em>`;
+                    }
+                    ol.appendChild(li);
+                });
+                previewMinutes.appendChild(ol);
+            } else {
+                previewMinutes.textContent = 'No discussion points recorded.';
+            }
+            
+            // Tasks
+            const tasksTable = document.querySelector('#preview-tasks tbody');
+            tasksTable.innerHTML = '';
+            if (db.tasks.length > 0) {
+                db.tasks.forEach(task => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.task}</td>
+                        <td>${task.assignee}</td>
+                        <td>${task.deadline}</td>
+                    `;
+                    tasksTable.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="3" style="text-align: center;">No action items</td>';
+                tasksTable.appendChild(row);
+            }
+            
+            // Notes
+            document.getElementById('preview-notes').innerHTML = 
+                document.getElementById('notes').value.replace(/\n/g, '<br>') || 'No additional notes.';
+            
+            pdfPreview.classList.remove('hidden');
+        });
+
+        // Export as PDF
+        exportPdfBtn.addEventListener('click', async () => {
+            // First generate preview if not already visible
+            if (pdfPreview.classList.contains('hidden')) {
+                generatePreviewBtn.click();
+                // Small delay to ensure rendering is complete
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add header placeholder
+            doc.setFillColor(220, 220, 220);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(16);
+            doc.text('YOUR COMPANY PDF HEADER', 105, 20, { align: 'center' });
+            
+            // Add meeting title
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
+            doc.text(document.getElementById('preview-meeting-title').textContent, 105, 45, { align: 'center' });
+            
+            // Add meeting details
+            doc.setFontSize(12);
+            let y = 60;
+            
+            doc.text(`Date: ${document.getElementById('preview-date').textContent}`, 20, y);
+            doc.text(`Time: ${document.getElementById('preview-start-time').textContent} - ${document.getElementById('preview-end-time').textContent}`, 105, y);
+            y += 15;
+            
+            // Add attendance
+            doc.setFontSize(12);
+            doc.text('Attendance:', 20, y);
+            y += 10;
+            
+            if (db.attendees.length > 0) {
+                db.attendees.forEach(attendee => {
+                    doc.text(`• ${attendee}`, 25, y);
+                    y += 7;
+                });
+            } else {
+                doc.text('No attendees recorded.', 25, y);
+                y += 7;
+            }
+            y += 10;
+            
+            // Add minutes
+            doc.text('Discussion Points & Tasks:', 20, y);
+            y += 10;
+            
+            if (db.minutes.length > 0) {
+                db.minutes.forEach((item, index) => {
+                    doc.text(`${index + 1}. ${item.timestamp}: ${item.content}`, 25, y);
+                    y += 7;
+                    
+                    if (item.assignee) {
+                        doc.text(`   Assigned to: ${item.assignee}`, 30, y);
+                        y += 7;
+                    }
+                    
+                    if (y > 250) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                });
+            } else {
+                doc.text('No discussion points recorded.', 25, y);
+                y += 7;
+            }
+            y += 10;
+            
+            // Add tasks
+            doc.text('Action Items:', 20, y);
+            y += 10;
+            
+            if (db.tasks.length > 0) {
+                // Table headers
+                doc.setFillColor(51, 51, 51);
+                doc.setTextColor(255, 255, 255);
+                doc.rect(20, y, 170, 10, 'F');
+                doc.text('Task', 25, y+7);
+                doc.text('Assignee', 100, y+7);
+                doc.text('Deadline', 150, y+7);
+                y += 10;
+                
+                // Table rows
+                doc.setTextColor(0, 0, 0);
+                db.tasks.forEach(task => {
+                    doc.text(task.task, 25, y+7, { maxWidth: 70 });
+                    doc.text(task.assignee, 100, y+7);
+                    doc.text(task.deadline, 150, y+7);
+                    y += 10;
+                    
+                    if (y > 250) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                });
+            } else {
+                doc.text('No action items.', 25, y);
+                y += 7;
+            }
+            y += 10;
+            
+            // Add notes
+            doc.text('Additional Notes:', 20, y);
+            y += 10;
+            
+            const notesLines = doc.splitTextToSize(
+                document.getElementById('notes').value || 'No additional notes.', 
+                170
+            );
+            doc.text(notesLines, 25, y);
+            y += notesLines.length * 7 + 15;
+            
+            // Add footer placeholder
+            doc.setFillColor(220, 220, 220);
+            doc.rect(0, 280, 210, 20, 'F');
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(10);
+            doc.text('YOUR COMPANY PDF FOOTER', 105, 287, { align: 'center' });
+            
+            // Save the PDF
+            const meetingTitle = document.getElementById('meeting-title').value || 'meeting_minutes';
+            doc.save(`${meetingTitle.replace(/\s+/g, '_')}.pdf`);
+        });
+
+        // Initialize date fields with today's date
+        document.getElementById('meeting-date').valueAsDate = new Date();
+        document.getElementById('task-deadline').valueAsDate = new Date();
+        
+        // Set default times
+        const now = new Date();
+        const startTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        document.getElementById('start-time').value = startTime;
+        
+        const endTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour later
+        document.getElementById('end-time').value = `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
+    </script>
+</body>
+</html>
